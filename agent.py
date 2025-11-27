@@ -12,7 +12,7 @@ load_dotenv()
 
 EMAIL = os.getenv("EMAIL")
 SECRET = os.getenv("SECRET")
-RECURSION_LIMIT =  5000
+RECURSION_LIMIT =  100000
 # -------------------------------------------------
 # STATE
 # -------------------------------------------------
