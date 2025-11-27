@@ -111,7 +111,7 @@ LLM-Analysis-TDS-Project-2/
 ### Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/saivijayragav/LLM-Analysis-TDS-Project-2.git
+git clone https://github.com/23f2002036/llm-analysis-quiz-project.git
 cd LLM-Analysis-TDS-Project-2
 ```
 
@@ -159,12 +159,7 @@ playwright install chromium
 Create a `.env` file in the project root:
 
 ```env
-# Your credentials from the Google Form submission
-EMAIL=your.email@example.com
-SECRET=your_secret_string
-
-# Google Gemini API Key
-GOOGLE_API_KEY=your_gemini_api_key_here
+mentioned in .env file
 ```
 
 ### Getting a Gemini API Key
@@ -384,7 +379,7 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ---
 
-**Author**: Sai Vijay Ragav 
+**Author**: Monika R 
 **Course**: Tools in Data Science (TDS)
 **Institution**: IIT Madras
 
