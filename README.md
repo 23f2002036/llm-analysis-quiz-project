@@ -357,7 +357,15 @@ The agent follows this loop:
 - The LLM uses full history to make informed decisions
 - Recursion limit set to 200 to handle long quiz chains
 
-### 5. Completion
+### 5. Rate Limits & Concurrency
+
+- Gemini Free Tier allows ~10 requests per minute per model.
+- The agent throttles LLM calls to ~6 rpm and disables bursting.
+- Runs are serialized within the process to avoid concurrent spikes that could hit 429s.
+
+If you upgrade to a paid plan or need higher throughput, you can relax these limits in `agent.py`.
+
+### 6. Completion
 
 - Agent returns "END" when no new URL is provided
 - Background task completes

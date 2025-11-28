@@ -12,7 +12,7 @@ load_dotenv()
 
 EMAIL = os.getenv("EMAIL")
 SECRET = os.getenv("SECRET")
-RECURSION_LIMIT =  100000
+RECURSION_LIMIT = 200
 # -------------------------------------------------
 # STATE
 # -------------------------------------------------
@@ -27,9 +27,9 @@ TOOLS = [run_code, get_rendered_html, download_file, post_request, add_dependenc
 # GEMINI LLM
 # -------------------------------------------------
 rate_limiter = InMemoryRateLimiter(
-    requests_per_second=9/60,  
-    check_every_n_seconds=1,  
-    max_bucket_size=9  
+    requests_per_second=6/60,
+    check_every_n_seconds=1,
+    max_bucket_size=1
 )
 llm = init_chat_model(
    model_provider="google_genai",
@@ -148,9 +148,18 @@ app = graph.compile()
 # TEST
 # -------------------------------------------------
 def run_agent(url: str) -> str:
-    app.invoke({
-        "messages": [{"role": "user", "content": url}]},
-        config={"recursion_limit": RECURSION_LIMIT},
-    )
+    # serialize agent runs within this process to avoid API rate bursts
+    from threading import Lock
+    global _AGENT_LOCK
+    try:
+        _AGENT_LOCK
+    except NameError:
+        _AGENT_LOCK = Lock()
+
+    with _AGENT_LOCK:
+        app.invoke(
+            {"messages": [{"role": "user", "content": url}]},
+            config={"recursion_limit": RECURSION_LIMIT},
+        )
     print("Tasks completed succesfully")
 
