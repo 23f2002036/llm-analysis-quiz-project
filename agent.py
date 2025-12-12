@@ -24,7 +24,7 @@ TOOLS = [run_code, get_rendered_html, download_file, post_request, add_dependenc
 
 
 # -------------------------------------------------
-# GEMINI LLM
+# AI PIPE LLM
 # -------------------------------------------------
 rate_limiter = InMemoryRateLimiter(
     requests_per_second=6/60,
@@ -32,9 +32,11 @@ rate_limiter = InMemoryRateLimiter(
     max_bucket_size=1
 )
 llm = init_chat_model(
-   model_provider="google_genai",
-   model="gemini-2.5-flash",
-   rate_limiter=rate_limiter
+   model_provider="openai",
+   model="gpt-4o-mini",
+   rate_limiter=rate_limiter,
+   api_key=os.getenv("AIPIPE_TOKEN"),
+   base_url="https://aipipe.org/openai/v1"
 ).bind_tools(TOOLS)   
 
 
@@ -156,10 +158,15 @@ def run_agent(url: str) -> str:
     except NameError:
         _AGENT_LOCK = Lock()
 
-    with _AGENT_LOCK:
-        app.invoke(
-            {"messages": [{"role": "user", "content": url}]},
-            config={"recursion_limit": RECURSION_LIMIT},
-        )
-    print("Tasks completed succesfully")
+    try:
+        with _AGENT_LOCK:
+            app.invoke(
+                {"messages": [{"role": "user", "content": url}]},
+                config={"recursion_limit": RECURSION_LIMIT},
+            )
+        print("Tasks completed successfully")
+    except Exception as e:
+        print(f"Error in agent: {str(e)}")
+        import traceback
+        traceback.print_exc()
 

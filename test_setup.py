@@ -12,12 +12,12 @@ def test_env_variables():
     
     email = os.getenv("EMAIL")
     secret = os.getenv("SECRET")
-    api_key = os.getenv("GOOGLE_API_KEY")
+    api_key = os.getenv("AIPIPE_TOKEN")
     
     checks = {
         "EMAIL": email,
         "SECRET": secret,
-        "GOOGLE_API_KEY": api_key
+        "AIPIPE_TOKEN": api_key
     }
     
     all_good = True
@@ -40,7 +40,7 @@ def test_imports():
         ("bs4", "BeautifulSoup"),
         ("langgraph", "LangGraph"),
         ("langchain", "LangChain"),
-        ("langchain_google_genai", "Google GenAI"),
+        ("langchain_openai", "LangChain OpenAI"),
         ("fastapi", "FastAPI"),
         ("uvicorn", "Uvicorn"),
     ]
@@ -56,16 +56,17 @@ def test_imports():
     
     return all_good
 
-def test_google_api():
-    """Test Google API key validity."""
-    print("\n🤖 Testing Google API key...")
+def test_aipipe_api():
+    """Test AI Pipe API key validity."""
+    print("\n🤖 Testing AI Pipe API key...")
     
     try:
-        from langchain_google_genai import ChatGoogleGenerativeAI
+        from langchain_openai import ChatOpenAI
         
-        llm = ChatGoogleGenerativeAI(
-            model="gemini-2.5-flash",
-            google_api_key=os.getenv("GOOGLE_API_KEY")
+        llm = ChatOpenAI(
+            model="gpt-4o-mini",
+            api_key=os.getenv("AIPIPE_TOKEN"),
+            base_url="https://aipipe.org/openai/v1"
         )
         
         # Simple test call
@@ -86,7 +87,7 @@ def main():
     
     results.append(("Environment Variables", test_env_variables()))
     results.append(("Package Imports", test_imports()))
-    results.append(("Google API Key", test_google_api()))
+    results.append(("AI Pipe API Key", test_aipipe_api()))
     
     print("\n" + "=" * 60)
     print("📊 SUMMARY")

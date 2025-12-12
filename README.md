@@ -14,7 +14,7 @@ app_port: 7860
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.121.3+-green.svg)](https://fastapi.tiangolo.com/)
 
-An intelligent, autonomous agent built with LangGraph and LangChain that solves data-related quizzes involving web scraping, data processing, analysis, and visualization tasks. The system uses Google's Gemini 2.5 Flash model to orchestrate tool usage and make decisions.
+An intelligent, autonomous agent built with LangGraph and LangChain that solves data-related quizzes involving web scraping, data processing, analysis, and visualization tasks. The system uses OpenAI's GPT-4o-mini model via AI Pipe to orchestrate tool usage and make decisions.
 
 ## 📋 Table of Contents
 
@@ -54,7 +54,7 @@ The project uses a **LangGraph state machine** architecture with the following c
        │
        ▼
 ┌─────────────┐
-│   Agent     │  ← LangGraph orchestrator with Gemini 2.5 Flash
+│   Agent     │  ← LangGraph orchestrator with GPT-4o-mini via AI Pipe
 │   (LLM)     │
 └──────┬──────┘
        │
@@ -68,7 +68,7 @@ The project uses a **LangGraph state machine** architecture with the following c
 1. **FastAPI Server** (`main.py`): Handles incoming POST requests, validates secrets, and triggers the agent
 2. **LangGraph Agent** (`agent.py`): State machine that coordinates tool usage and decision-making
 3. **Tools Package** (`tools/`): Modular tools for different capabilities
-4. **LLM**: Google Gemini 2.5 Flash with rate limiting (9 requests per minute)
+4. **LLM**: OpenAI GPT-4o-mini via AI Pipe with rate limiting (6 requests per minute)
 
 ## ✨ Features
 
@@ -162,11 +162,9 @@ Create a `.env` file in the project root:
 mentioned in .env file
 ```
 
-### Getting a Gemini API Key
+### Getting Your AI Pipe Token
 
-1. Visit [Google AI Studio](https://aistudio.google.com/app/apikey)
-2. Create a new API key
-3. Copy it to your `.env` file
+Your AI Pipe token is provided by your course instructor. Add it to your `.env` file as `AIPIPE_TOKEN`.
 
 ## 🚀 Usage
 
@@ -293,7 +291,7 @@ docker build -t llm-analysis-agent .
 docker run -p 7860:7860 \
   -e EMAIL="your.email@example.com" \
   -e SECRET="your_secret_string" \
-  -e GOOGLE_API_KEY="your_api_key" \
+  -e AIPIPE_TOKEN="your_aipipe_token" \
   llm-analysis-agent
 ```
 
@@ -304,7 +302,7 @@ docker run -p 7860:7860 \
 3. Add secrets in Space settings:
    - `EMAIL`
    - `SECRET`
-   - `GOOGLE_API_KEY`
+   - `AIPIPE_TOKEN`
 4. The Space will automatically build and deploy
 
 ## 🧠 How It Works

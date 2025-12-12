@@ -1,19 +1,21 @@
-"""List available Gemini models."""
+"""List available OpenAI models via AI Pipe."""
 import os
 from dotenv import load_dotenv
-from google import genai
-from google.genai import types
+from openai import OpenAI
 
 load_dotenv()
 
-client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
+client = OpenAI(
+    api_key=os.getenv("AIPIPE_TOKEN"),
+    base_url="https://aipipe.org/openai/v1"
+)
 
-print("Available Gemini models:")
+print("Available OpenAI models via AI Pipe:")
 print("=" * 60)
 try:
-    for model in client.models.list():
-        print(f"✅ {model.name}")
-        print(f"   Display: {model.display_name}")
+    models = client.models.list()
+    for model in models.data:
+        print(f" {model.id}")
         print()
 except Exception as e:
     print(f"Error: {e}")
