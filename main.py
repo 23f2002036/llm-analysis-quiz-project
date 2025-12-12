@@ -22,6 +22,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 START_TIME = time.time()
+
+@app.get("/")
+def root():
+    return {
+        "message": "LLM Quiz Agent API",
+        "endpoints": ["/healthz", "/solve", "/docs"],
+        "uptime_seconds": int(time.time() - START_TIME)
+    }
+
 @app.get("/healthz")
 def healthz():
     """Simple liveness check."""
