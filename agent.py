@@ -12,6 +12,12 @@ load_dotenv()
 
 EMAIL = os.getenv("EMAIL")
 SECRET = os.getenv("SECRET")
+"""
+Ensure LangChain's OpenAI client picks up credentials when running in HF.
+We use AIPIPE_TOKEN but LangChain expects OPENAI_API_KEY/OPENAI_BASE_URL.
+"""
+os.environ.setdefault("OPENAI_API_KEY", os.getenv("AIPIPE_TOKEN", ""))
+os.environ.setdefault("OPENAI_BASE_URL", "https://aipipe.org/openai/v1")
 RECURSION_LIMIT = 200
 # -------------------------------------------------
 # STATE
@@ -35,8 +41,8 @@ llm = init_chat_model(
    model_provider="openai",
    model="gpt-4o-mini",
    rate_limiter=rate_limiter,
-   api_key=os.getenv("AIPIPE_TOKEN"),
-   base_url="https://aipipe.org/openai/v1"
+    api_key=os.getenv("AIPIPE_TOKEN"),
+    base_url="https://aipipe.org/openai/v1"
 ).bind_tools(TOOLS)   
 
 
