@@ -47,14 +47,16 @@ async def solve(request: Request, background_tasks: BackgroundTasks):
         raise HTTPException(status_code=400, detail="Invalid JSON")
     if not data:
         raise HTTPException(status_code=400, detail="Invalid JSON")
+    
+    email = data.get("email")
     url = data.get("url")
     secret = data.get("secret")
-    if not url or not secret:
+    if not email or not url or not secret:
         raise HTTPException(status_code=400, detail="Invalid JSON")
     
     if secret != SECRET:
         raise HTTPException(status_code=403, detail="Invalid secret")
-    print("Verified starting the task...")
+    print(f"Verified request from {email}. Starting quiz task for {url}...")
     background_tasks.add_task(run_agent, url)
 
     return JSONResponse(status_code=200, content={"status": "ok"})
