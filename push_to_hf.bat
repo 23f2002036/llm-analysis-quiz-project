@@ -14,7 +14,7 @@ echo.
 set /p HF_TOKEN=Enter your HuggingFace API token: 
 
 REM Update remote URL with token
-git remote set-url hf https://23F2002036:%HF_TOKEN%@huggingface.co/spaces/23F2002036/llm-analysis-quiz-proj.git
+git remote set-url hf https://23F2002036:%HF_TOKEN%@huggingface.co/spaces/23F2002036/tds-project-2.git
 
 echo.
 echo Pushing to HuggingFace...
@@ -23,7 +23,7 @@ git push hf main
 if %ERRORLEVEL% EQU 0 (
     echo.
     echo ✅ Successfully pushed to HuggingFace!
-    echo Space URL: https://huggingface.co/spaces/23F2002036/llm-analysis-quiz-proj
+    echo Space URL: https://huggingface.co/spaces/23F2002036/tds-project-2
 ) else (
     echo.
     echo ❌ Failed to push. Check your token and try again.
