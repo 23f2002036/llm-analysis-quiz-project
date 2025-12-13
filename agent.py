@@ -20,7 +20,7 @@ We use AIPIPE_TOKEN but LangChain expects OPENAI_API_KEY/OPENAI_BASE_URL.
 """
 os.environ.setdefault("OPENAI_API_KEY", os.getenv("AIPIPE_TOKEN", ""))
 os.environ.setdefault("OPENAI_BASE_URL", "https://aipipe.org/openai/v1")
-RECURSION_LIMIT = 200
+RECURSION_LIMIT = 50000
 # -------------------------------------------------
 # STATE
 # -------------------------------------------------
