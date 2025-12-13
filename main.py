@@ -12,11 +12,20 @@ load_dotenv()
 
 EMAIL = os.getenv("EMAIL") 
 SECRET = os.getenv("SECRET")
+AIPIPE_TOKEN = os.getenv("AIPIPE_TOKEN")
+
+print("=" * 60)
+print("🚀 LLM Quiz Agent Starting")
+print("=" * 60)
+print(f"✓ EMAIL: {EMAIL[:20]}..." if EMAIL else "✗ EMAIL: NOT SET")
+print(f"✓ SECRET: {'***' if SECRET else 'NOT SET'}")
+print(f"✓ AIPIPE_TOKEN: {AIPIPE_TOKEN[:20]}..." if AIPIPE_TOKEN else "✗ AIPIPE_TOKEN: NOT SET (agent will fail)")
+print("=" * 60)
 
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # or specific domains
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

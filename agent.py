@@ -20,7 +20,8 @@ We use AIPIPE_TOKEN but LangChain expects OPENAI_API_KEY/OPENAI_BASE_URL.
 """
 aipipe_token = os.getenv("AIPIPE_TOKEN")
 if not aipipe_token:
-    raise ValueError("AIPIPE_TOKEN environment variable is not set. Please set it in .env or HF Secrets.")
+    print("⚠️  WARNING: AIPIPE_TOKEN not set. Set it in .env or HF Secrets.")
+    aipipe_token = "placeholder"
 
 os.environ.setdefault("OPENAI_API_KEY", aipipe_token)
 os.environ.setdefault("OPENAI_BASE_URL", "https://aipipe.org/openai/v1")
@@ -53,8 +54,9 @@ try:
         base_url="https://aipipe.org/openai/v1"
     ).bind_tools(TOOLS)
 except Exception as e:
-    print(f"Error initializing LLM: {e}")
-    raise   
+    print(f"⚠️  Error initializing LLM: {e}")
+    print("This is expected if AIPIPE_TOKEN is not set. The agent will fail at runtime if called.")
+    llm = None
 
 
 # -------------------------------------------------
@@ -192,6 +194,9 @@ def run_agent(task_payload: Any) -> str:
         _AGENT_LOCK
     except NameError:
         _AGENT_LOCK = Lock()
+
+    if not llm:
+        raise RuntimeError("LLM not initialized. AIPIPE_TOKEN must be set.")
 
     payload: dict
     if isinstance(task_payload, dict):
