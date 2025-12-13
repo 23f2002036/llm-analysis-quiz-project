@@ -18,7 +18,11 @@ SECRET = os.getenv("SECRET")
 Ensure LangChain's OpenAI client picks up credentials when running in HF.
 We use AIPIPE_TOKEN but LangChain expects OPENAI_API_KEY/OPENAI_BASE_URL.
 """
-os.environ.setdefault("OPENAI_API_KEY", os.getenv("AIPIPE_TOKEN", ""))
+aipipe_token = os.getenv("AIPIPE_TOKEN")
+if not aipipe_token:
+    raise ValueError("AIPIPE_TOKEN environment variable is not set. Please set it in .env or HF Secrets.")
+
+os.environ.setdefault("OPENAI_API_KEY", aipipe_token)
 os.environ.setdefault("OPENAI_BASE_URL", "https://aipipe.org/openai/v1")
 RECURSION_LIMIT = 50000
 # -------------------------------------------------
@@ -40,19 +44,23 @@ rate_limiter = InMemoryRateLimiter(
     check_every_n_seconds=1,
     max_bucket_size=1
 )
-llm = init_chat_model(
-   model_provider="openai",
-   model="gpt-4o-mini",
-   rate_limiter=rate_limiter,
-    api_key=os.getenv("AIPIPE_TOKEN"),
-    base_url="https://aipipe.org/openai/v1"
-).bind_tools(TOOLS)   
+try:
+    llm = init_chat_model(
+       model_provider="openai",
+       model="gpt-4o-mini",
+       rate_limiter=rate_limiter,
+        api_key=aipipe_token,
+        base_url="https://aipipe.org/openai/v1"
+    ).bind_tools(TOOLS)
+except Exception as e:
+    print(f"Error initializing LLM: {e}")
+    raise   
 
 
 # -------------------------------------------------
 # SYSTEM PROMPT
 # -------------------------------------------------
-SYSTEM_PROMPT = f"""
+SYSTEM_PROMPT = """
 You are an autonomous quiz-solving agent.
 
 You MUST always start by fetching the quiz page using the get_rendered_html tool on the provided URL. Then follow the instructions on that page, download any files with download_file (not the scraper), run analyses with run_code, submit answers with post_request, and install missing packages with add_dependencies.
@@ -75,6 +83,7 @@ GENERAL RULES:
 - NEVER re-submit unless the server explicitly allows or it's within the 3-minute limit.
 - ALWAYS inspect the server response before deciding what to do next.
 - ALWAYS use the tools provided to fetch, scrape, download, render HTML, or send requests.
+- ALWAYS include the email and secret from the task message in every submission.
 
 TIME LIMIT RULES:
 - Each task has a hard 3-minute limit.
@@ -83,17 +92,13 @@ TIME LIMIT RULES:
 
 STOPPING CONDITION:
 - Return "END" when a server response explicitly contains NO new URL OR when elapsed time is near 180 seconds.
- - Track elapsed time yourself from the first message.
-
-ADDITIONAL INFORMATION YOU MUST INCLUDE WHEN REQUIRED:
-- Email: {EMAIL}
-- Secret: {SECRET}
+- Track elapsed time yourself from the first message.
 
 YOUR JOB:
 - Follow pages exactly.
 - Extract data reliably.
 - Never guess.
-- Submit correct answers.
+- Submit correct answers with the right email and secret.
 - Continue until no new URL.
 - Then respond with: END
 """
@@ -181,7 +186,6 @@ app = graph.compile()
 # -------------------------------------------------
 def run_agent(task_payload: Any) -> str:
     """Start the LangGraph agent with the incoming task payload."""
-    # serialize agent runs within this process to avoid API rate bursts
     from threading import Lock
     global _AGENT_LOCK
     try:
@@ -197,10 +201,15 @@ def run_agent(task_payload: Any) -> str:
 
     start_time = time.time()
     url = payload.get("url")
+    task_secret = payload.get("secret", SECRET)
+    task_email = payload.get("email", EMAIL)
+    
     initial_message = {
         "task": payload,
         "started_at": start_time,
-        "instructions": "Begin at the provided url, follow the quiz page with get_rendered_html, and continue until no new url is provided. Stop near 180 seconds if needed."
+        "email": task_email,
+        "secret": task_secret,
+        "instructions": "Begin at the provided url, follow the quiz page with get_rendered_html, and continue until no new url is provided. Stop near 180 seconds if needed. Always include the email and secret in submissions."
     }
 
     try:
