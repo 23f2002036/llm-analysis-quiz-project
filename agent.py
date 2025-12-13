@@ -24,7 +24,7 @@ if not aipipe_token:
 
 os.environ.setdefault("OPENAI_API_KEY", aipipe_token)
 os.environ.setdefault("OPENAI_BASE_URL", "https://aipipe.org/openai/v1")
-RECURSION_LIMIT = 50000
+RECURSION_LIMIT = 200
 # -------------------------------------------------
 # STATE
 # -------------------------------------------------
