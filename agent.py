@@ -7,6 +7,8 @@ from typing import TypedDict, Annotated, List, Any
 from langchain.chat_models import init_chat_model
 from langgraph.graph.message import add_messages
 import os
+import json
+import time
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -24,6 +26,7 @@ RECURSION_LIMIT = 200
 # -------------------------------------------------
 class AgentState(TypedDict):
     messages: Annotated[List, add_messages]
+    start_time: float
 
 
 TOOLS = [run_code, get_rendered_html, download_file, post_request, add_dependencies]
@@ -52,6 +55,8 @@ llm = init_chat_model(
 SYSTEM_PROMPT = f"""
 You are an autonomous quiz-solving agent.
 
+You MUST always start by fetching the quiz page using the get_rendered_html tool on the provided URL. Then follow the instructions on that page, download any files with download_file (not the scraper), run analyses with run_code, submit answers with post_request, and install missing packages with add_dependencies.
+
 Your job is to:
 1. Load the quiz page from the given URL.
 2. Extract ALL instructions, required parameters, submission rules, and the submit endpoint.
@@ -74,11 +79,11 @@ GENERAL RULES:
 TIME LIMIT RULES:
 - Each task has a hard 3-minute limit.
 - The server response includes a "delay" field indicating elapsed time.
-- If your answer is wrong retry again.
+- If delay or elapsed time approaches 170 seconds, submit once if needed, then stop and return END to avoid exceeding 180 seconds.
 
 STOPPING CONDITION:
-- Only return "END" when a server response explicitly contains NO new URL.
-- DO NOT return END under any other condition.
+- Return "END" when a server response explicitly contains NO new URL OR when elapsed time is near 180 seconds.
+ - Track elapsed time yourself from the first message.
 
 ADDITIONAL INFORMATION YOU MUST INCLUDE WHEN REQUIRED:
 - Email: {EMAIL}
@@ -106,7 +111,7 @@ llm_with_prompt = prompt | llm
 # -------------------------------------------------
 def agent_node(state: AgentState):
     result = llm_with_prompt.invoke({"messages": state["messages"]})
-    return {"messages": state["messages"] + [result]}
+    return {"messages": state["messages"] + [result], "start_time": state["start_time"]}
 
 
 # -------------------------------------------------
@@ -114,6 +119,11 @@ def agent_node(state: AgentState):
 # -------------------------------------------------
 def route(state):
     last = state["messages"][-1]
+
+    elapsed = time.time() - state.get("start_time", time.time())
+    if elapsed >= 175:
+        return END
+
     # support both objects (with attributes) and plain dicts
     tool_calls = None
     if hasattr(last, "tool_calls"):
@@ -123,6 +133,7 @@ def route(state):
 
     if tool_calls:
         return "tools"
+
     # get content robustly
     content = None
     if hasattr(last, "content"):
@@ -132,8 +143,21 @@ def route(state):
 
     if isinstance(content, str) and content.strip() == "END":
         return END
-    if isinstance(content, list) and content[0].get("text").strip() == "END":
+    if isinstance(content, list):
+        for part in content:
+            if isinstance(part, dict) and str(part.get("text", "")).strip() == "END":
+                return END
+
+    role = None
+    if hasattr(last, "type"):
+        role = getattr(last, "type", None)
+    elif isinstance(last, dict):
+        role = last.get("role")
+
+    # If the assistant responded without tool calls, stop to avoid recursion loops.
+    if role in ("assistant", "ai"):
         return END
+
     return "agent"
 graph = StateGraph(AgentState)
 
@@ -155,7 +179,8 @@ app = graph.compile()
 # -------------------------------------------------
 # TEST
 # -------------------------------------------------
-def run_agent(url: str) -> str:
+def run_agent(task_payload: Any) -> str:
+    """Start the LangGraph agent with the incoming task payload."""
     # serialize agent runs within this process to avoid API rate bursts
     from threading import Lock
     global _AGENT_LOCK
@@ -164,13 +189,30 @@ def run_agent(url: str) -> str:
     except NameError:
         _AGENT_LOCK = Lock()
 
+    payload: dict
+    if isinstance(task_payload, dict):
+        payload = task_payload
+    else:
+        payload = {"url": str(task_payload)}
+
+    start_time = time.time()
+    url = payload.get("url")
+    initial_message = {
+        "task": payload,
+        "started_at": start_time,
+        "instructions": "Begin at the provided url, follow the quiz page with get_rendered_html, and continue until no new url is provided. Stop near 180 seconds if needed."
+    }
+
     try:
         with _AGENT_LOCK:
             app.invoke(
-                {"messages": [{"role": "user", "content": url}]},
+                {
+                    "messages": [{"role": "user", "content": json.dumps(initial_message)}],
+                    "start_time": start_time,
+                },
                 config={"recursion_limit": RECURSION_LIMIT},
             )
-        print("Tasks completed successfully")
+        print(f"Tasks completed successfully for {url}")
     except Exception as e:
         print(f"Error in agent: {str(e)}")
         import traceback

@@ -1,6 +1,6 @@
 from langchain_core.tools import tool
 from playwright.sync_api import sync_playwright
-from bs4 import BeautifulSoup
+import os
 
 @tool
 def get_rendered_html(url: str) -> str:
@@ -28,13 +28,23 @@ def get_rendered_html(url: str) -> str:
     """
     # ... existing code ...
     print("\nFetching and rendering:", url)
+
+    if url.startswith("file://"):
+        local_path = url.replace("file://", "", 1)
+        try:
+            with open(local_path, "r", encoding="utf-8") as f:
+                return f.read()
+        except Exception as e:
+            return f"Error reading local file: {e}"
+
     try:
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
             page = browser.new_page()
 
             # Load the page (let JS execute)
-            page.goto(url, wait_until="networkidle")
+            page.goto(url, wait_until="networkidle", timeout=45000)
+            page.wait_for_timeout(1500)
 
             # Extract rendered HTML
             content = page.content()

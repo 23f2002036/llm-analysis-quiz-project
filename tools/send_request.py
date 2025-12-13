@@ -29,36 +29,29 @@ def post_request(url: str, payload: Dict[str, Any], headers: Optional[Dict[str, 
     headers = headers or {"Content-Type": "application/json"}
     try:
         print(f"\nSending Answer \n{json.dumps(payload, indent=4)}\n to url: {url}")
-        response = requests.post(url, json=payload, headers=headers)
+        response = requests.post(url, json=payload, headers=headers, timeout=60)
 
         # Raise on 4xx/5xx
         response.raise_for_status()
 
-        # Try to return JSON, fallback to raw text
-        data = response.json()
-        delay = data.get("delay", 0)
-        delay = delay if isinstance(delay, (int, float)) else 0
-        correct = data.get("correct")
-        if not correct and delay < 180:
-            del data["url"]
-        if delay >= 180:
-            data = {
-                "url": data.get("url")
-            }
+        try:
+            data = response.json()
+        except ValueError:
+            data = {"status_code": response.status_code, "text": response.text}
+
         print("Got the response: \n", json.dumps(data, indent=4), '\n')
         return data
     except requests.HTTPError as e:
-        # Extract server’s error response
         err_resp = e.response
 
         try:
             err_data = err_resp.json()
         except ValueError:
-            err_data = err_resp.text
+            err_data = {"status_code": err_resp.status_code, "text": err_resp.text}
 
         print("HTTP Error Response:\n", err_data)
         return err_data
 
     except Exception as e:
         print("Unexpected error:", e)
-        return str(e)
+        return {"error": str(e)}

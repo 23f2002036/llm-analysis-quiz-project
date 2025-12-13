@@ -42,19 +42,31 @@ def run_code(code: str) -> dict:
     try: 
         filename = "runner.py"
         os.makedirs("LLMFiles", exist_ok=True)
+        cleaned_code = strip_code_fences(code)
         with open(os.path.join("LLMFiles", filename), "w") as f:
-            f.write(code)
+            f.write(cleaned_code)
 
-        proc = subprocess.Popen(
-            ["uv", "run", filename],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            cwd="LLMFiles"
-        )
+        cmd = ["uv", "run", filename]
+        try:
+            proc = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                cwd="LLMFiles"
+            )
+        except FileNotFoundError:
+            # Fallback when uv is unavailable
+            proc = subprocess.Popen(
+                ["python", filename],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                cwd="LLMFiles"
+            )
+
         stdout, stderr = proc.communicate()
 
-        # --- Step 4: Return everything ---
         return {
             "stdout": stdout,
             "stderr": stderr,

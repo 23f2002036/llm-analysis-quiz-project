@@ -39,27 +39,48 @@ def healthz():
         "uptime_seconds": int(time.time() - START_TIME)
     }
 
-@app.post("/solve")
-async def solve(request: Request, background_tasks: BackgroundTasks):
+
+async def _handle_quiz_request(request: Request, background_tasks: BackgroundTasks):
+    """Validate incoming payload, enforce secret, and start the agent."""
     try:
         data = await request.json()
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid JSON")
-    if not data:
+
+    if not isinstance(data, dict):
         raise HTTPException(status_code=400, detail="Invalid JSON")
-    
-    email = data.get("email")
+
     url = data.get("url")
     secret = data.get("secret")
-    if not email or not url or not secret:
+    email = data.get("email") or EMAIL
+
+    if not url or not secret:
         raise HTTPException(status_code=400, detail="Invalid JSON")
-    
+
+    if not SECRET:
+        raise HTTPException(status_code=500, detail="Server secret not configured")
+
     if secret != SECRET:
         raise HTTPException(status_code=403, detail="Invalid secret")
-    print(f"Verified request from {email}. Starting quiz task for {url}...")
-    background_tasks.add_task(run_agent, url)
+
+    payload = dict(data)
+    if email:
+        payload["email"] = email
+
+    print(f"Verified request. Starting quiz task for {url}...")
+    background_tasks.add_task(run_agent, payload)
 
     return JSONResponse(status_code=200, content={"status": "ok"})
+
+
+@app.post("/")
+async def solve_root(request: Request, background_tasks: BackgroundTasks):
+    return await _handle_quiz_request(request, background_tasks)
+
+
+@app.post("/solve")
+async def solve(request: Request, background_tasks: BackgroundTasks):
+    return await _handle_quiz_request(request, background_tasks)
 
 
 if __name__ == "__main__":
